@@ -462,13 +462,30 @@ function PawnInitialize()
 				end
 			end
 		end
-	elseif ContainerFrame_UpdateItemUpgradeIcons then
+	else
 		-- Legion through Shadowlands
 
 		-- Changing IsContainerItemAnUpgrade now causes taint errors, and replacing this function with a copy of itself
 		-- works on its own, but breaks other addons that hook this function like CanIMogIt. So, our best option appears to
 		-- be to just let the default version run, and then change its results immediately after.
-		hooksecurefunc("ContainerFrameItemButton_UpdateItemUpgradeIcon", PawnUpdateItemUpgradeIcon)
+		-- hooksecurefunc("ContainerFrameItemButton_UpdateItemUpgradeIcon", PawnUpdateItemUpgradeIcon)
+		-- I DONT HAVE THE EXPERIENCE TO HOOK INTO A BUTTON SO I HOOKED ALL THE BAG FRAMES AND ITERATED OVER ALL BUTTONS
+		-- Loop all bags.
+	  for BagIndex, BagFrame in ContainerFrameUtil_EnumerateContainerFrames() do
+			hooksecurefunc(BagFrame,"UpdateItems", function(self)
+				for i, itemButton in self:EnumerateValidItems() do
+					if itemButton.isExtended then return end
+					local IsUpgrade = PawnIsContainerItemAnUpgrade(itemButton:GetBagID(), itemButton:GetID())
+					if IsUpgrade == nil then
+						itemButton.UpgradeIcon:SetShown(false)
+						itemButton:SetScript("OnUpdate", ContainerFrameItemButton_TryUpdateItemUpgradeIcon)
+					else
+						itemButton.UpgradeIcon:SetShown(IsUpgrade)
+						itemButton:SetScript("OnUpdate", nil)
+					end
+				end
+			end)
+		end
 	end
 
 	-- Dragonflight professions UI
